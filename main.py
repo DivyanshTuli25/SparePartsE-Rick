@@ -5,6 +5,34 @@ from PIL import Image
 # Define the Excel file path
 excel_file_path = 'stock.xlsx'
 
+# Define parts requirements for each e-rickshaw model
+model_parts_requirements = {
+    "Model A": {
+        "Motor": 1,
+        "Battery": 1,
+        "Controller": 1,
+        "Throttle": 1,
+        "Brake": 1,
+        "Frame": 1,
+        "Wheels": 2,
+        "Charger": 1,
+        "Seat": 1,
+        "Suspension": 1
+    },
+    "Model B": {
+        "Motor": 1,
+        "Battery": 2,
+        "Controller": 1,
+        "Throttle": 1,
+        "Brake": 2,
+        "Frame": 1,
+        "Wheels": 3,
+        "Charger": 1,
+        "Seat": 1,
+        "Suspension": 2
+    }
+}
+
 
 # Function to load stock data from the Excel file
 def load_stock_data():
@@ -13,30 +41,19 @@ def load_stock_data():
     except FileNotFoundError:
         # If the Excel file does not exist, create a new one with initial stock
         parts = {
-            ("Motor", "Blue"): 10,
-            ("Motor", "Red"): 10,
-            ("Battery", "Blue"): 10,
-            ("Battery", "Red"): 10,
-            ("Controller", "Blue"): 10,
-            ("Controller", "Red"): 10,
-            ("Throttle", "Blue"): 10,
-            ("Throttle", "Red"): 10,
-            ("Brake", "Blue"): 10,
-            ("Brake", "Red"): 10,
-            ("Frame", "Blue"): 10,
-            ("Frame", "Red"): 10,
-            ("Wheels", "Blue"): 40,
-            ("Wheels", "Red"): 40,
-            ("Charger", "Blue"): 10,
-            ("Charger", "Red"): 10,
-            ("Seat", "Blue"): 10,
-            ("Seat", "Red"): 10,
-            ("Suspension", "Blue"): 10,
-            ("Suspension", "Red"): 10,
+            "Motor": [10, 10],
+            "Battery": [10, 10],
+            "Controller": [10, 10],
+            "Throttle": [10, 10],
+            "Brake": [10, 10],
+            "Frame": [10, 10],
+            "Wheels": [10, 10],
+            "Charger": [10, 10],
+            "Seat": [10, 10],
+            "Suspension": [10, 10]
         }
-        df = pd.DataFrame(list(parts.items()), columns=['Part_Color', 'Stock'])
-        df[['Part', 'Color']] = pd.DataFrame(df['Part_Color'].tolist(), index=df.index)
-        df = df.drop(columns=['Part_Color'])
+        df = pd.DataFrame(parts).T.reset_index()
+        df.columns = ['Part', 'Stock_Blue', 'Stock_Red']
         df.to_excel(excel_file_path, index=False)
     return df
 
@@ -47,54 +64,43 @@ def save_stock_data(df):
 
 
 # Function to decrement stock for custom number of rickshaws
-def decrement_stock(df, num_rickshaws, color):
-    required_parts = {
-        "Motor": 1,
-        "Battery": 1,
-        "Controller": 1,
-        "Throttle": 1,
-        "Brake": 1,
-        "Frame": 1,
-        "Wheels": 4,
-        "Charger": 1,
-        "Seat": 1,
-        "Suspension": 1
-    }
+def decrement_stock(df, num_rickshaws, color, model):
+    stock_column = f'Stock_{color}'
+    requirements = model_parts_requirements[model]
 
-    for part, qty in required_parts.items():
-        part_stock = df.loc[(df['Part'] == part) & (df['Color'] == color), 'Stock'].values[0]
-        if part_stock < qty * num_rickshaws:
+    for part, qty in requirements.items():
+        if (df.loc[df['Part'] == part, stock_column] < qty * num_rickshaws).any():
             return df, False
 
-    for part, qty in required_parts.items():
-        df.loc[(df['Part'] == part) & (df['Color'] == color), 'Stock'] -= qty * num_rickshaws
+    for part, qty in requirements.items():
+        df.loc[df['Part'] == part, stock_column] -= qty * num_rickshaws
 
     return df, True
 
 
 # Function to increment stock
 def increment_stock(df, selected_parts, quantity, color):
+    stock_column = f'Stock_{color}'
     if "All stock" in selected_parts:
-        df.loc[df['Color'] == color, 'Stock'] += quantity
+        df[stock_column] += quantity
     else:
         for part in selected_parts:
-            df.loc[(df['Part'] == part) & (df['Color'] == color), 'Stock'] += quantity
+            df.loc[df['Part'] == part, stock_column] += quantity
     return df
 
 
 # Function to decrement custom stock
 def decrement_custom_stock(df, selected_parts, quantity, color):
+    stock_column = f'Stock_{color}'
     if "All stock" in selected_parts:
-        part_color = df.loc[df['Color'] == color, 'Stock']
-        if (part_color >= quantity).all():
-            df.loc[df['Color'] == color, 'Stock'] = part_color - quantity
+        if (df[stock_column] >= quantity).all():
+            df[stock_column] -= quantity
         else:
             return df, False
     else:
         for part in selected_parts:
-            part_stock = df.loc[(df['Part'] == part) & (df['Color'] == color), 'Stock'].values[0]
-            if part_stock >= quantity:
-                df.loc[(df['Part'] == part) & (df['Color'] == color), 'Stock'] -= quantity
+            if df.loc[df['Part'] == part, stock_column].values[0] >= quantity:
+                df.loc[df['Part'] == part, stock_column] -= quantity
             else:
                 return df, False
     return df, True
@@ -151,39 +157,40 @@ st.dataframe(df)
 
 # Section to decrement stock for custom number of rickshaws
 st.subheader("Record New Rickshaws")
-color = st.selectbox('Select Rickshaw Color', ['Blue', 'Red'], key='rickshaw_color')
+model = st.selectbox('Select Rickshaw Model', ['Model A', 'Model B'], key='model')
 num_rickshaws = st.number_input('Number of Rickshaws to Record', min_value=1, step=1, key='num_rickshaws')
+rickshaw_color = st.selectbox('Select Rickshaw Color', ['Blue', 'Red'], key='rickshaw_color')
 if st.button('Record Rickshaws Made'):
-    df, success = decrement_stock(df, num_rickshaws, color)
+    df, success = decrement_stock(df, num_rickshaws, rickshaw_color, model)
     if success:
         save_stock_data(df)
-        st.success("Stock updated successfully!")
+        st.success(f"Stock updated successfully for {num_rickshaws} {rickshaw_color} rickshaw(s) of {model}!")
     else:
-        st.error(f"Not enough stock to make {num_rickshaws} {color} rickshaws!")
+        st.error(f"Not enough stock to make {num_rickshaws} {rickshaw_color} rickshaw(s) of {model}!")
     st.dataframe(df)
 
 # Section to increment stock
 st.subheader("Increment Stock of Parts")
-parts_list = ["All stock"] + df['Part'].unique().tolist()
-increment_parts = st.multiselect('Select Parts to Increment', parts_list, key='increment_parts')
-color = st.selectbox('Select Part Color', ['Blue', 'Red'], key='increment_color')
+parts_list = ["All stock"] + df['Part'].tolist()
+increment_parts = st.multiselect('Select Parts to Increment', parts_list)
 quantity_increment = st.number_input('Quantity to Add', min_value=1, step=1, key='increment_qty')
+increment_color = st.selectbox('Select Part Color', ['Blue', 'Red'], key='increment_color')
 if st.button('Increment Stock'):
-    df = increment_stock(df, increment_parts, quantity_increment, color)
+    df = increment_stock(df, increment_parts, quantity_increment, increment_color)
     save_stock_data(df)
-    st.success("Stock updated successfully!")
+    st.success(f"Stock updated successfully for {increment_color} parts!")
     st.dataframe(df)
 
 # Section to decrement custom stock
 st.subheader("Decrement Stock of Parts")
-decrement_parts = st.multiselect('Select Parts to Decrement', parts_list, key='decrement_parts')
-color = st.selectbox('Select Part Color', ['Blue', 'Red'], key='decrement_color')
+decrement_parts = st.multiselect('Select Parts to Decrement', parts_list)
 quantity_decrement = st.number_input('Quantity to Remove', min_value=1, step=1, key='decrement_qty')
+decrement_color = st.selectbox('Select Part Color', ['Blue', 'Red'], key='decrement_color')
 if st.button('Decrement Stock'):
-    df, success = decrement_custom_stock(df, decrement_parts, quantity_decrement, color)
+    df, success = decrement_custom_stock(df, decrement_parts, quantity_decrement, decrement_color)
     if success:
         save_stock_data(df)
-        st.success("Stock updated successfully!")
+        st.success(f"Stock updated successfully for {decrement_color} parts!")
     else:
-        st.error(f"Not enough stock to remove {quantity_decrement} of one or more selected parts!")
+        st.error(f"Not enough stock to remove {quantity_decrement} of one or more selected {decrement_color} parts!")
     st.dataframe(df)
