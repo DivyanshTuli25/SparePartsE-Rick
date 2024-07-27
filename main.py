@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
 from PIL import Image
-
 # Define the Excel file path
 excel_file_path = 'stock.xlsx'
 
@@ -116,7 +115,7 @@ st.set_page_config(page_title="Electric Rickshaw Spare Parts Management", page_i
 st.markdown("""
     <style>
     .main {
-        background-color: #f8f9fa;
+        background-color: #85C227;
     }
     h1 {
         color: #007bff;
