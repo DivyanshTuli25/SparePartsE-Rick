@@ -39,15 +39,6 @@ def load_stock_data():
 def save_stock_data(df):
     df.to_excel(stock_file_path, index=False)
 
-# Function to calculate how many models can be made with the current stock
-def calculate_producible(df, parts_requirements):
-    producible = {model: [] for model in parts_requirements.keys()}
-    for model, requirements in parts_requirements.items():
-        for part, qty in requirements.items():
-            producible[model].append(df.loc[df['Parts'] == part, 'Stock'].values[0] // qty)
-        df[model + 's that can be made'] = min(producible[model])
-    return df
-
 # Function to decrement stock for custom number of rickshaws
 def decrement_stock(df, num_rickshaws, model, parts_requirements):
     requirements = parts_requirements[model]
@@ -88,9 +79,6 @@ def decrement_custom_stock(df, selected_parts, quantity):
 # Load parts requirements and stock data
 parts_requirements = load_parts_requirements()
 df = load_stock_data()
-
-# Calculate producible quantities
-df = calculate_producible(df, parts_requirements)
 
 # Streamlit app
 st.set_page_config(page_title="Electric Rickshaw Spare Parts Management", page_icon=":rickshaw:", layout="wide")
@@ -135,9 +123,8 @@ st.image("https://www.bybyerickshaw.com/images/logo.png", width=200)
 st.title("Electric Rickshaw Spare Parts Management")
 
 # Display current stock
-df_print = df[['S No', 'Parts', 'Unit', 'Stock',"Rounds that can be made","GKs that can be made","Flexis that can be made","Ecos that can be made"]]
 st.subheader("Current Stock of Parts")
-st.dataframe(df_print)
+st.dataframe(df[['Parts', 'Unit', 'Stock']])
 
 # Section to decrement stock for custom number of rickshaws
 st.subheader("Record New Rickshaws")
@@ -147,13 +134,10 @@ if st.button('Record Rickshaws Made'):
     df, success = decrement_stock(df, num_rickshaws, model, parts_requirements)
     if success:
         save_stock_data(df)
-        df = calculate_producible(df, parts_requirements)
         st.success(f"Stock updated successfully for {num_rickshaws} rickshaw(s) of {model}!")
     else:
         st.error(f"Not enough stock to make {num_rickshaws} rickshaw(s) of {model}!")
-    df_print = df[['S No', 'Parts', 'Unit', 'Stock',"Rounds that can be made","GKs that can be made","Flexis that can be made","Ecos that can be made"]]
-
-    st.dataframe(df_print)
+    st.dataframe(df[['Parts', 'Unit', 'Stock']])
 
 
 # Section to increment stock
@@ -164,12 +148,8 @@ quantity_increment = st.number_input('Quantity to Add', min_value=1, step=1, key
 if st.button('Increment Stock'):
     df = increment_stock(df, increment_parts, quantity_increment)
     save_stock_data(df)
-    df = calculate_producible(df, parts_requirements)
     st.success("Stock updated successfully!")
-    df_print = df[
-        ['S No', 'Parts', 'Unit', 'Stock', "Rounds that can be made", "GKs that can be made", "Flexis that can be made",
-         "Ecos that can be made"]]
-    st.dataframe(df_print)
+    st.dataframe(df[['Parts', 'Unit', 'Stock']])
 
 
 # Section to decrement custom stock
@@ -180,11 +160,7 @@ if st.button('Decrement Stock'):
     df, success = decrement_custom_stock(df, decrement_parts, quantity_decrement)
     if success:
         save_stock_data(df)
-        df = calculate_producible(df, parts_requirements)
         st.success("Stock updated successfully!")
     else:
         st.error(f"Not enough stock to remove {quantity_decrement} of one or more selected parts!")
-    df_print = df[
-        ['S No', 'Parts', 'Unit', 'Stock', "Rounds that can be made", "GKs that can be made", "Flexis that can be made",
-         "Ecos that can be made"]]
-    st.dataframe(df_print)
+    st.dataframe(df[['Parts', 'Unit', 'Stock']])

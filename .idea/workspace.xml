@@ -5,6 +5,10 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="e07b79b4-82d7-4e7a-8a9a-0a3be0cc40ff" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/Models.xlsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Parts.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Parts.xlsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Parts1.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
     </list>
@@ -39,6 +43,11 @@
     &quot;git-widget-placeholder&quot;: &quot;main&quot;
   }
 }</component>
+  <component name="RecentsManager">
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\User\PycharmProjects\E-Rick Stock Management" />
+    </key>
+  </component>
   <component name="RunManager">
     <configuration name="main" type="PythonConfigurationType" factoryName="Python" nameIsGenerated="true">
       <module name="E-Rick Stock Management" />
