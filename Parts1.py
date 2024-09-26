@@ -10,7 +10,7 @@ parts_file_path = 'Parts.xlsx'
 def load_parts_requirements():
     df = pd.read_excel(parts_file_path)
     model_parts_requirements = {}
-    for model in df.columns[4:]:
+    for model in df.columns[4:]:  # Assuming 'Parts' is the first column and models start from the second column
         model_parts_requirements[model] = df.set_index('Parts')[model].to_dict()
     return model_parts_requirements
 
@@ -41,12 +41,30 @@ def save_stock_data(df):
 
 # Function to calculate how many models can be made with the current stock
 def calculate_producible(df, parts_requirements):
-    producible = {model: [] for model in parts_requirements.keys()}
+    producible_dict = {}
     for model, requirements in parts_requirements.items():
+        min_producible = float('inf')
         for part, qty in requirements.items():
-            producible[model].append(df.loc[df['Parts'] == part, 'Stock'].values[0] // qty)
-        df[model + 's that can be made'] = min(producible[model])
-    return df
+            stock_qty = df.loc[df['Parts'] == part, 'Stock'].values[0]
+            if qty > 0:  # Avoid division by zero
+                producible = stock_qty // qty
+                if producible < min_producible:
+                    min_producible = producible
+        df[model + 's that can be made'] = min_producible
+        producible_dict[model] = min_producible
+    return df, producible_dict
+
+# Function to find parts needed for replenishment
+def find_parts_to_replenish(df, parts_requirements, producible_dict, threshold=100):
+    replenishment_list = []
+    for model, producible_qty in producible_dict.items():
+        if producible_qty < threshold:
+            for part, qty in parts_requirements[model].items():
+                stock_qty = df.loc[df['Parts'] == part, 'Stock'].values[0]
+                required_qty = (threshold - producible_qty) * qty
+                if required_qty > 0:
+                    replenishment_list.append((model, part, required_qty))
+    return replenishment_list
 
 # Function to decrement stock for custom number of rickshaws
 def decrement_stock(df, num_rickshaws, model, parts_requirements):
@@ -90,7 +108,7 @@ parts_requirements = load_parts_requirements()
 df = load_stock_data()
 
 # Calculate producible quantities
-df = calculate_producible(df, parts_requirements)
+df, producible_dict = calculate_producible(df, parts_requirements)
 
 # Streamlit app
 st.set_page_config(page_title="Electric Rickshaw Spare Parts Management", page_icon=":rickshaw:", layout="wide")
@@ -135,9 +153,21 @@ st.image("https://www.bybyerickshaw.com/images/logo.png", width=200)
 st.title("Electric Rickshaw Spare Parts Management")
 
 # Display current stock
-df_print = df[['S No', 'Parts', 'Unit', 'Stock',"Rounds that can be made","GKs that can be made","Flexis that can be made","Ecos that can be made"]]
+df_print = df[['Parts', 'Stock']]
 st.subheader("Current Stock of Parts")
 st.dataframe(df_print)
+
+# Display producible quantities
+st.subheader("Producible Rickshaws")
+producible_text = ", ".join([f"{model}: {qty}" for model, qty in producible_dict.items()])
+st.write(f"Number of producible models: {producible_text}")
+
+# Check for parts replenishment
+replenishment_list = find_parts_to_replenish(df, parts_requirements, producible_dict)
+if replenishment_list:
+    st.warning("Some parts need to be replenished:")
+    for model, part, required_qty in replenishment_list:
+        st.write(f"Model: {model}, Part: {part}, Required Quantity: {required_qty}")
 
 # Section to decrement stock for custom number of rickshaws
 st.subheader("Record New Rickshaws")
@@ -147,14 +177,26 @@ if st.button('Record Rickshaws Made'):
     df, success = decrement_stock(df, num_rickshaws, model, parts_requirements)
     if success:
         save_stock_data(df)
-        df = calculate_producible(df, parts_requirements)
+        df, producible_dict = calculate_producible(df, parts_requirements)
         st.success(f"Stock updated successfully for {num_rickshaws} rickshaw(s) of {model}!")
     else:
         st.error(f"Not enough stock to make {num_rickshaws} rickshaw(s) of {model}!")
-    df_print = df[['S No', 'Parts', 'Unit', 'Stock',"Rounds that can be made","GKs that can be made","Flexis that can be made","Ecos that can be made"]]
-
+    df_print = df[['Parts', 'Stock']]
     st.dataframe(df_print)
+    producible_text = ", ".join([f"{model}: {qty}" for model, qty in producible_dict.items()])
+    st.write(f"Number of producible models: {producible_text}")
 
+    # Check for parts replenishment after recording new rickshaws
+
+
+    # Initialize a DataFrame with three columns and no rows
+    parts_required_df = pd.DataFrame(columns=['Model', 'Part', 'Required Quantity'])
+
+    replenishment_list = find_parts_to_replenish(df, parts_requirements, producible_dict)
+    if replenishment_list:
+        st.warning("Some parts need to be replenished:")
+        for model, part, required_qty in replenishment_list:
+            st.write(f"Model: {model}, Part: {part}, Required Quantity: {required_qty}")
 
 # Section to increment stock
 st.subheader("Increment Stock of Parts")
@@ -164,13 +206,19 @@ quantity_increment = st.number_input('Quantity to Add', min_value=1, step=1, key
 if st.button('Increment Stock'):
     df = increment_stock(df, increment_parts, quantity_increment)
     save_stock_data(df)
-    df = calculate_producible(df, parts_requirements)
+    df, producible_dict = calculate_producible(df, parts_requirements)
     st.success("Stock updated successfully!")
-    df_print = df[
-        ['S No', 'Parts', 'Unit', 'Stock', "Rounds that can be made", "GKs that can be made", "Flexis that can be made",
-         "Ecos that can be made"]]
+    df_print = df[['Parts', 'Stock']]
     st.dataframe(df_print)
+    producible_text = ", ".join([f"{model}: {qty}" for model, qty in producible_dict.items()])
+    st.write(f"Number of producible models: {producible_text}")
 
+    # Check for parts replenishment after incrementing stock
+    replenishment_list = find_parts_to_replenish(df, parts_requirements, producible_dict)
+    if replenishment_list:
+        st.warning("Some parts need to be replenished:")
+        for model, part, required_qty in replenishment_list:
+            st.write(f"Model: {model}, Part: {part}, Required Quantity: {required_qty}")
 
 # Section to decrement custom stock
 st.subheader("Decrement Stock of Parts")
@@ -180,11 +228,18 @@ if st.button('Decrement Stock'):
     df, success = decrement_custom_stock(df, decrement_parts, quantity_decrement)
     if success:
         save_stock_data(df)
-        df = calculate_producible(df, parts_requirements)
+        df, producible_dict = calculate_producible(df, parts_requirements)
         st.success("Stock updated successfully!")
     else:
         st.error(f"Not enough stock to remove {quantity_decrement} of one or more selected parts!")
-    df_print = df[
-        ['S No', 'Parts', 'Unit', 'Stock', "Rounds that can be made", "GKs that can be made", "Flexis that can be made",
-         "Ecos that can be made"]]
+    df_print = df[['Parts', 'Stock']]
     st.dataframe(df_print)
+    producible_text = ", ".join([f"{model}: {qty}" for model, qty in producible_dict.items()])
+    st.write(f"Number of producible models: {producible_text}")
+
+    # Check for parts replenishment after decrementing stock
+    replenishment_list = find_parts_to_replenish(df, parts_requirements, producible_dict)
+    if replenishment_list:
+        st.warning("Some parts need to be replenished:")
+        for model, part, required_qty in replenishment_list:
+            st.write(f"Model: {model}, Part: {part}, Required Quantity: {required_qty}")
