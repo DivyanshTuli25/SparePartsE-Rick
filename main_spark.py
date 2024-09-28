@@ -3,14 +3,14 @@ import pandas as pd
 from PIL import Image
 
 # Define the Excel file paths
-stock_file_path = 'Parts.xlsx'
-parts_file_path = 'Parts.xlsx'
+stock_file_path = 'Stock3.xlsx'
+parts_file_path = 'Stock3.xlsx'
 
 # Function to load parts requirements from the Excel file
 def load_parts_requirements():
     df = pd.read_excel(parts_file_path)
     model_parts_requirements = {}
-    for model in df.columns[4:]:  # Assuming 'Parts' is the first column and models start from the second column
+    for model in df.columns[3:]:
         model_parts_requirements[model] = df.set_index('Parts')[model].to_dict()
     return model_parts_requirements
 
@@ -42,14 +42,14 @@ def save_stock_data(df):
 # Function to calculate how many models can be made with the current stock
 def calculate_producible(df, parts_requirements):
     for model, requirements in parts_requirements.items():
-        min_producible = float('inf')
-        for part, qty in requirements.items():
-            stock_qty = df.loc[df['Parts'] == part, 'Stock'].values[0]
-            if qty > 0:  # Avoid division by zero
-                producible = stock_qty // qty
-                if producible < min_producible:
-                    min_producible = producible
-        df[model + 's that can be made'] = min_producible
+        df[model + 's that can be made'] = 0
+        for index, row in df.iterrows():
+            part = row['Parts']
+            stock_qty = row['Stock']
+            if part in requirements:
+                qty = requirements[part]
+                producible = stock_qty // qty if qty > 0 else 0
+                df.at[index, model + 's that can be made'] = producible
     return df
 
 # Function to decrement stock for custom number of rickshaws
@@ -134,14 +134,44 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
+
+
+df["E-Rickshaws that can be made"] = df["Stock"]//df["Required per vehicle"]
+df_print = df[["Parts", "Stock", "Required per vehicle", "E-Rickshaws that can be made", "Round Model","Loader","Flexi Model"]]
+
+# Apply conditional formatting
+def highlight_rows(val):
+    if val <= 100:
+        return 'background-color: #FF0000'
+    elif 101 <= val <= 200:
+        return 'background-color: #FFA500'
+    else:
+        return 'background-color: #90EE90'
+
+
+
 # Header section
 st.image("https://www.bybyerickshaw.com/images/logo.png", width=200)
 st.title("Electric Rickshaw Spare Parts Management")
 
-# Display current stock
-df_print = df[['Parts', 'Stock', "Rounds that can be made", "GKs that can be made", "Flexis that can be made", "Ecos that can be made"]]
+stock_filter = st.radio(
+    "Filter Parts by Stock Range",
+    ('All', '0-100', '101-200', '200+')
+)
+
+# Filter the dataframe based on stock range
+if stock_filter == '0-100':
+    df_filtered = df_print[df_print['E-Rickshaws that can be made'] <= 100]
+elif stock_filter == '101-200':
+    df_filtered = df_print[(df_print['E-Rickshaws that can be made'] > 100) & (df_print['E-Rickshaws that can be made'] <= 200)]
+elif stock_filter == '200+':
+    df_filtered = df_print[df_print['E-Rickshaws that can be made'] > 200]
+else:
+    df_filtered = df_print
+
+# Display current stock with color formatting
 st.subheader("Current Stock of Parts")
-st.dataframe(df_print)
+st.dataframe(df_filtered.style.applymap(highlight_rows, subset=["E-Rickshaws that can be made"]))
 
 # Section to decrement stock for custom number of rickshaws
 st.subheader("Record New Rickshaws")
@@ -155,8 +185,7 @@ if st.button('Record Rickshaws Made'):
         st.success(f"Stock updated successfully for {num_rickshaws} rickshaw(s) of {model}!")
     else:
         st.error(f"Not enough stock to make {num_rickshaws} rickshaw(s) of {model}!")
-    df_print = df[['Parts', 'Stock', "Rounds that can be made", "GKs that can be made", "Flexis that can be made", "Ecos that can be made"]]
-    st.dataframe(df_print)
+    st.dataframe(df_filtered.style.applymap(highlight_rows, subset=["E-Rickshaws that can be made"]))
 
 # Section to increment stock
 st.subheader("Increment Stock of Parts")
@@ -168,8 +197,7 @@ if st.button('Increment Stock'):
     save_stock_data(df)
     df = calculate_producible(df, parts_requirements)
     st.success("Stock updated successfully!")
-    df_print = df[['Parts', 'Stock', "Rounds that can be made", "GKs that can be made", "Flexis that can be made", "Ecos that can be made"]]
-    st.dataframe(df_print)
+    st.dataframe(df_filtered.style.applymap(highlight_rows, subset=["E-Rickshaws that can be made"]))
 
 # Section to decrement custom stock
 st.subheader("Decrement Stock of Parts")
@@ -183,5 +211,4 @@ if st.button('Decrement Stock'):
         st.success("Stock updated successfully!")
     else:
         st.error(f"Not enough stock to remove {quantity_decrement} of one or more selected parts!")
-    df_print = df[['Parts', 'Stock', "Rounds that can be made", "GKs that can be made", "Flexis that can be made", "Ecos that can be made"]]
-    st.dataframe(df_print)
+    st.dataframe(df_filtered.style.applymap(highlight_rows, subset=["E-Rickshaws that can be made"]))
