@@ -5,15 +5,10 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="e07b79b4-82d7-4e7a-8a9a-0a3be0cc40ff" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/Stock3.xlsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Models.xlsx" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/Parts.py" beforeDir="false" afterPath="$PROJECT_DIR$/Parts.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Parts1.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Parts2.xlsx" beforeDir="false" afterPath="$PROJECT_DIR$/Parts2.xlsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Stock3.xlsx" beforeDir="false" afterPath="$PROJECT_DIR$/Stock3.xlsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/main_spark.py" beforeDir="false" afterPath="$PROJECT_DIR$/main_spark.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/stock.xlsx" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
