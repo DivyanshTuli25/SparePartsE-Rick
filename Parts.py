@@ -11,7 +11,7 @@ parts_file_path = 'Stock3.xlsx'
 def load_parts_requirements():
     df = pd.read_excel(parts_file_path)
     model_parts_requirements = {}
-    for model in df.columns[3:]:
+    for model in df.columns[3:6]:
         model_parts_requirements[model] = df.set_index('Parts')[model].to_dict()
     return model_parts_requirements
 
