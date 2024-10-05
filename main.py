@@ -171,6 +171,7 @@ def highlight_rows(val):
         return 'background-color: #90EE90'  # Green for high stock
 
 
+
 # Header section
 st.image("https://www.bybyerickshaw.com/images/logo.png", width=200)
 st.title("Electric Rickshaw Spare Parts Management")
